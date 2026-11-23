@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2026-11-24
+- Prepared Vercel Python hosting with a serverless entry point, explicit routing, Python version selection, and API tests through rewritten URLs.
 - Removed the unused Sites manifest, Node browser-check script, empty requirements file, and redundant mobile screenshot variants.
 - Cleaned local legacy build output, Python caches, and the temporary source ZIP.
 - Kept the Python runtime, tests, prompt history, evaluation evidence, report drafts, and light/dark desktop screenshots.

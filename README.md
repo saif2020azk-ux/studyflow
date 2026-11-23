@@ -19,6 +19,14 @@ Open http://127.0.0.1:5173. `python3 app.py --port 5174` selects a different por
 
 The application requires a running Python backend. To host it online, use a Python-capable host; uploading the source to GitHub does not deploy the app.
 
+## Vercel hosting
+
+The project includes a dependency-free Python function entry point at `api/index.py`, a Python 3.12 selection in `.python-version`, and routing in `vercel.json`. The function reuses the local Python handler for the interface, scheduling, validation, prompt templates, and CSV export. Tests, report drafts, screenshots, and saved evaluation output are excluded from the function bundle; the evaluation inputs stay available because the app uses them.
+
+Import `saif2020azk-ux/studyflow` in the intended Vercel account/team. Use the repository root, Framework Preset **Other**, and the default build/install settings. No API keys or environment variables are required. Connecting the Vercel GitHub integration to this repository enables deployments from GitHub commits. Verify the resulting deployment at `/` and `/api/health` before sharing its URL.
+
+References: [Vercel Python functions](https://vercel.com/docs/functions/runtimes/python/api-directory), [Vercel GitHub integration](https://vercel.com/docs/git/vercel-for-github).
+
 ## Features
 
 - Light/Dark theme buttons with a saved preference; first visit follows the device theme.
@@ -46,6 +54,8 @@ The automatic default planner is deterministic code, not an LLM. AI model calls 
 
 ```text
 app.py            Python application entry point
+api/index.py      Vercel Python function entry point
+vercel.json       Vercel routing and function-bundle configuration
 backend/          Python HTTP API, scheduling engine, validator, CSV export and evaluation
 code/             HTML/CSS and JavaScript browser interface (no scheduling algorithm)
 prompts/          v1/, v2/, v3/, final/
@@ -59,7 +69,7 @@ CHANGELOG.md      Dated implementation changes
 
 Team ID/name, faculty/batch, members/enrollment numbers, agreed contribution percentages, Milestone 1 materials, actual AI runs and comparison, screenshots, final PDFs, presentation, LinkedIn post, and recorded videos. Documentation is a starter and must be completed with genuine evidence. No course submission or public social post has been made.
 
-Verification: all 34 Python unit/API tests pass, covering the engine, malformed input and model responses, CSV safety, static-file boundaries, and HTTP endpoints. All 16 original scheduling scenarios pass with Python. Local scheduling tests do not evaluate AI prompt quality. The two desktop screenshots in docs/ show real local scheduler runs in light and dark themes.
+Verification: all 40 Python unit/API tests pass, covering the engine, malformed input and model responses, CSV safety, static-file boundaries, and HTTP endpoints. All 16 original scheduling scenarios pass with Python. Local scheduling tests do not evaluate AI prompt quality. The two desktop screenshots in docs/ show real local scheduler runs in light and dark themes.
 
 ## Privacy and limitations
 

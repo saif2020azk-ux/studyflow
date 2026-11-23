@@ -92,5 +92,21 @@ class ApiTests(unittest.TestCase):
             self.assertIn(self.request("GET", path)[0], (403, 404))
 
 
+class VercelApiTests(ApiTests):
+    """Run the API suite through the exact path Vercel rewrites to."""
+    @classmethod
+    def setUpClass(cls):
+        from http.server import ThreadingHTTPServer
+        from api.index import handler
+        cls.server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+        cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
+        cls.thread.start()
+
+    def request(self, method, path, *args, **kwargs):
+        from urllib.parse import quote
+        target = "/api/index.py?__path=" + quote(path, safe="")
+        return super().request(method, target, *args, **kwargs)
+
+
 if __name__ == "__main__":
     unittest.main()
