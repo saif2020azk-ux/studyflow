@@ -1,6 +1,9 @@
 # Changelog
 
 ## 2026-11-23
+- Migrated scheduling, validation, model-response parsing, CSV export, evaluation and HTTP serving to Python.
+- Replaced Node runtime/build scripts with python3 app.py and standard-library tests; kept the browser interface and themes.
+- Python migration remains local; prior hosted preview is the earlier JavaScript version.
 - Simplified getting started with a quick guide, clearly labelled example, Start fresh, and one-click daily availability.
 - Added Light/Dark theme selection, system preference on first visit, saved theme choice, and print-friendly colours.
 - Improved field labels, visible CSV download, mobile navigation, validation feedback, and unfinished draft recovery.

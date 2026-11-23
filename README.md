@@ -2,18 +2,22 @@
 
 Timetable and study plan generator for Prompt Engineering problem **C20**. Enter subjects, exam dates, target hours and weekly availability; receive a checked day-wise timetable. Includes a prompt lab for real model experiments.
 
+GitHub repository: https://github.com/saif2020azk-ux/studyflow
+
 ## Run locally
 
-Requires Node.js 20 or newer. No dependencies or API keys are required.
+Requires **Python 3.10 or newer**. No pip packages, Node.js, or API keys are needed to run the application.
 
 ```sh
 cd studyflow
-npm test
-npm run evaluate
-npm run dev
+python3 -m unittest discover -s tests -v
+python3 -m backend.evaluate
+python3 app.py
 ```
 
-Open http://127.0.0.1:5173. For static hosting, run `npm run build` and serve `dist/`. `npm run evaluate` refreshes the measured local results included in builds.
+Open http://127.0.0.1:5173. `python3 app.py --port 5174` selects a different port. The server serves the frontend directly; no build step is needed. `python3 -m backend.evaluate` saves measured Python results to test-data/local-results.json.
+
+The application now requires a running Python backend and cannot be served as a static-only site. The previously published Sites preview remains the earlier JavaScript version; this Python migration is local and has not been published.
 
 ## Features
 
@@ -21,7 +25,7 @@ Open http://127.0.0.1:5173. For static hosting, run `npm run build` and serve `d
 - Quick-start guide, clearly marked example, Start fresh, and one-click hours for every day.
 - Clear field labels, a visible CSV download button and mobile-friendly navigation. Unfinished drafts survive a reload.
 - Up to 12 subjects and a 120-day planning period, with 15-minute increments.
-- Earliest-exam-first local scheduler with explicit shortfall reporting.
+- Python earliest-exam-first local scheduler with explicit shortfall reporting.
 - Six code-based constraint checks, plus target-completeness checks.
 - Two final prompt templates: generation (P1, with v1/v2/v3) and conditional repair (P2).
 - Manual external-AI workflow: copy prompt, run in your chosen AI tool, paste actual JSON, validate and apply.
@@ -41,11 +45,13 @@ The automatic default planner is deterministic code, not an LLM. AI model calls 
 ## Files
 
 ```text
-code/             HTML, CSS and JavaScript app, scheduling engine and validator
+app.py            Python application entry point
+backend/          Python HTTP API, scheduling engine, validator, CSV export and evaluation
+code/             HTML/CSS and JavaScript browser interface (no scheduling algorithm)
 prompts/          v1/, v2/, v3/, final/
 test-data/        Cases and measured local outputs
-tests/            Node tests for schedules, validation and CSV safety
-scripts/          Build, evaluation and local server
+tests/            Python unittest coverage for scheduling, validation, CSV and real HTTP endpoints
+scripts/          Optional real-browser QA helper (requires Node.js and installed Chrome)
 docs/             Workflow, report outline, supporting draft, reel script
 CHANGELOG.md      Dated implementation changes
 ```
@@ -54,14 +60,18 @@ CHANGELOG.md      Dated implementation changes
 
 Team ID/name, faculty/batch, members/enrollment numbers, agreed contribution percentages, Milestone 1 materials, actual AI runs and comparison, screenshots, final PDFs, presentation, LinkedIn post, and recorded videos. Documentation is a starter and must be completed with genuine evidence. No course submission or public social post has been made.
 
-Verification: 26 Node tests and 16 saved local scenarios pass. Real Chrome smoke checks cover theme selection and reload persistence, initial device theme, unfinished draft recovery, Start fresh, quick daily hours, print colours, the initial plan, adding/removing subjects, overload handling, prompt generation, JSON rejection, response import with an explicitly synthetic fixture, and every view on desktop/mobile. The fixture import is not model evaluation evidence. Screenshots in docs/ show real local scheduler runs in light and dark themes.
+Verification: all 34 Python unit/API tests pass, covering the engine, malformed input and model responses, CSV safety, static-file boundaries, and HTTP endpoints. All 16 original scheduling scenarios pass with Python; migration checks also matched the prior JavaScript schedules. Real Chrome checks passed for the Python-backed app, themes, draft recovery, scheduling, response import and desktop/mobile views. Fixture imports are not AI evaluation evidence. Screenshots in docs/ show real local scheduler runs.
 
-The Sites deployment starts owner-private; evaluator access must be arranged before using it as a submission link. Local Git is connected to Sites source storage; this is not automatically a public GitHub repository.
+The earlier Sites deployment is owner-private; evaluator access must be arranged before using it as a submission link. The GitHub destination for the Python source is saif2020azk-ux/studyflow. Publishing source does not deploy the Python application.
 
 ## Privacy and limitations
 
-Data is stored in localStorage on the current browser. AI text is transferred only when you copy it into an external tool. Google Fonts is optional and falls back to system fonts. Use made-up student data for tests. The app does not model exact clock times, per-date availability exceptions, syllabus coverage, spaced repetition, or calendar sync. Availability must exclude breaks. Users review and adjust their own plans.
+Plans and experiment history are stored in localStorage in the current browser. Student inputs and imported AI responses are sent to the Python server for calculation/validation, but are not written to disk or forwarded to a model by the server. With the default localhost binding, that server runs on your own machine. External AI calls remain manual. Google Fonts is optional and falls back to system fonts. Use made-up student data for tests. The app does not model exact clock times, per-date availability exceptions, syllabus coverage, spaced repetition, or calendar sync. Availability must exclude breaks. Users review and adjust their own plans.
 
 ## Attribution
 
 Problem and submission requirements: Bennett University Prompt Engineering Mini Project Guidelines 2026 and SCSE4041 Milestone 2 Student Guidelines supplied by the user. Prototype, prompts, tests and drafts were developed with Codex assistance on 23 November 2026. Exact tools/models used for assessed AI experiments must be added after running them.
+
+## HTTP API
+
+`GET /api/health`, `/api/prompts`, `/api/evaluation`; `POST /api/plan` and `/api/validate-input` accept `{"input": ...}`; `/api/check` and `/api/export` accept `{"input": ..., "plan": ...}`; `/api/validate-response` accepts `{"input": ..., "rawOutput": "actual model text"}`. POST bodies use application/json. Invalid schedule inputs return an errors list; malformed HTTP requests return a 4xx status. This is a local student prototype; public deployment requires a Python-capable host.

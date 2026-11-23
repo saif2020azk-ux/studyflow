@@ -13,7 +13,7 @@ Prompt sheet P1 — Study plan generation; purpose: convert constraints to a dai
 Prompt sheet P2 — Conditional schedule repair; purpose: correct observed failures in the same conversation; system prompt: none; user prompt: prompts/final/P2-repair.txt; variable {issues}: observed violations/shortfalls; examples: none; settings/model: same as P1. Include actual repair input/output. There are two final templates; P1 has three authored versions. Count only demonstrated final prompts and clearly explain per-prompt version counts in the form/report.
 
 ## 3. Implementation
-Working: student input, weekly availability, local planner, constraint validator, subject coverage, CSV/print export, browser persistence, versioned prompt builder, manual AI-response import, repair text generation, experiment history export, local evaluation display.
+Working: Python HTTP backend, student input, weekly availability, Python local planner, Python constraint validator, subject coverage, CSV/print export, browser persistence, versioned prompt builder, manual AI-response import, repair text generation, experiment history export, local evaluation display.
 
 Not implemented: automatic model API calls, clock-time scheduling, calendar sync, authentication, cross-device persistence, automated AI benchmark runner.
 

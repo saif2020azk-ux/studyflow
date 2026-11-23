@@ -1,10 +1,19 @@
-import {generatePlan,validateInput,checkPlan,parseModelOutput,exportCsv,localDate,addDays,dayDifference} from './planner.mjs';
-import {templates,repairTemplate} from './prompt-templates.mjs';
 const $=id=>document.getElementById(id);
 const escapeHtml=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const colors=[['#8a70ca','#f1ebfc'],['#549a89','#e9f5ef'],['#cb9264','#fff1e8'],['#678cbe','#eaf1fc'],['#bc789c','#faeaf2'],['#9a9b53','#f4f5e6']];
 const storageKey='studyflow.workspace.v1',runsKey='studyflow.runs.v1';
 let state,dirty=false,page=0,display='days',validated=null,runs=[],toastTimer,printing=false;
+let templates={};
+function localDate(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function addDays(value,offset){return new Date(Date.parse(value+'T00:00:00Z')+offset*86400000).toISOString().slice(0,10);}
+async function api(path,payload){
+  let response;
+  try{response=await fetch(path,payload===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});}
+  catch{throw new Error('Cannot reach the Python server. Start it with python3 app.py and try again.');}
+  const result=await response.json();
+  if(!response.ok)throw new Error(result.error||'The Python server could not complete the request.');
+  return result;
+}
 function example(){const start=localDate();return {isExample:true,input:{startDate:start,availability:[3,3,2,3,2,4,3],subjects:[{id:'math',name:'Mathematics',examDate:addDays(start,7),hours:8,priority:'high'},{id:'physics',name:'Physics',examDate:addDays(start,10),hours:7,priority:'medium'},{id:'cs',name:'Computer Science',examDate:addDays(start,13),hours:6,priority:'medium'}]},result:null};}
 function fresh(){const start=localDate();return {isExample:false,input:{startDate:start,availability:[2,2,2,2,2,2,2],subjects:[{id:'s-'+crypto.randomUUID().slice(0,8),name:'',examDate:addDays(start,14),hours:5,priority:'medium'}]},result:null};}
 function canRestore(input){return input&&typeof input.startDate==='string'&&Array.isArray(input.availability)&&input.availability.length===7&&input.availability.every(h=>Number.isFinite(h))&&Array.isArray(input.subjects)&&input.subjects.length>0&&input.subjects.length<=12&&input.subjects.every(s=>s&&typeof s.id==='string'&&typeof s.name==='string'&&typeof s.examDate==='string'&&Number.isFinite(s.hours)&&['low','medium','high'].includes(s.priority));}
@@ -59,57 +68,83 @@ function renderPlan(){
   $('validation-description').textContent=validation.complete?'Your study targets fit within your available time.':'The schedule respects your limits. Some study targets need more time.';
   $('constraint-checks').innerHTML=validation.checks.map(c=>`<span class="constraint-check ${c.pass?'':'failed'}"><b>${c.pass?'✓':'×'}</b> ${escapeHtml(c.name)}</span>`).join('');
 }
-function markDirty(){dirty=!!state.result;state.isExample=false;validated=null;$('use-ai-plan').disabled=true;$('ai-validation').textContent='';$('repair-prompt').value='';if(!$('form-errors').hidden){const errors=validateInput(state.input);$('form-errors').hidden=!errors.length;$('form-errors').textContent=errors.join(' ');}save();renderPlan();renderPrompt();}
-function generate(){const result=generatePlan(state.input);$('form-errors').hidden=result.ok;if(!result.ok){$('form-errors').textContent=result.errors.join(' ');$('form-errors').scrollIntoView({block:'center',behavior:'smooth'});return false;}state.result={...result,input:structuredClone(state.input)};dirty=false;page=0;save();renderPlan();return true;}
+function markDirty(){dirty=!!state.result;state.isExample=false;validated=null;$('use-ai-plan').disabled=true;$('ai-validation').textContent='';$('repair-prompt').value='';$('form-errors').hidden=true;save();renderPlan();renderPrompt();}
+async function generate(){
+  const input=structuredClone(state.input),button=$('generate-plan');
+  button.disabled=true;button.textContent='Creating your plan…';
+  try{
+    const result=await api('/api/plan',{input});
+    if(JSON.stringify(state.input)!==JSON.stringify(input))return false;
+    $('form-errors').hidden=result.ok;
+    if(!result.ok){$('form-errors').textContent=result.errors.join(' ');$('form-errors').scrollIntoView({block:'center',behavior:'smooth'});return false;}
+    state.result={...result,input};dirty=false;page=0;save();renderPlan();return true;
+  }catch(error){$('form-errors').hidden=false;$('form-errors').textContent=error.message;return false;}
+  finally{button.disabled=false;button.textContent='Create my study plan';}
+}
 const versionNotes={v1:'Baseline: a simple planning instruction. No enforced schema or explicit feasibility policy. Its response may need format repair; record this as a limitation.',v2:'Adds subject IDs, JSON output, date coverage, and hard limits. Targets are explicit, but the treatment of impossible requests is less detailed.',v3:'Adds a worked example, strict 15-minute increments, infeasibility handling, and self-check instructions. Improvements must be measured with actual model runs.'};
-function renderPrompt(){const version=$('prompt-version').value;$('version-note').textContent=versionNotes[version];$('prompt-text').value=templates[version].replace('{student_input}',JSON.stringify(state.input,null,2));}
+function renderPrompt(){const version=$('prompt-version').value;$('version-note').textContent=versionNotes[version];$('prompt-text').value=(templates[version]||'Connecting to the Python server…').replace('{student_input}',JSON.stringify(state.input,null,2));}
 function renderRuns(){
   $('run-count').textContent=`${runs.length} actual run${runs.length===1?'':'s'}`;
   $('experiment-log').innerHTML=runs.length?[...runs].reverse().map(r=>`<div class="experiment-entry"><strong>${escapeHtml(r.version)} · ${escapeHtml(r.model)}</strong><br>${new Date(r.timestamp).toLocaleString()} · ${r.validation?`${r.validation.checks.filter(c=>c.pass).length}/6 checks passed · ${r.validation.complete?'targets covered':'targets not fully covered'}`:'JSON could not be parsed'}${r.error?`<br>${escapeHtml(r.error)}`:''}</div>`).join(''):'<div class="empty-state">No AI runs recorded yet. Start with the Prompt lab.</div>';
 }
 function route(){const view=['planner','lab','evaluation','guide'].includes(location.hash.slice(1))?location.hash.slice(1):'planner';for(const id of ['planner','lab','evaluation','guide'])$(`${id}-view`).hidden=id!==view;document.querySelectorAll('[data-view]').forEach(a=>a.classList.toggle('active',a.dataset.view===view));$('breadcrumb').textContent={planner:'Study planner',lab:'Prompt lab',evaluation:'Evaluation',guide:'Project guide'}[view];if(view==='lab')renderPrompt();if(view==='evaluation')renderRuns();}
 state=readSaved(storageKey,null);
-if(!state || !canRestore(state.input)){state=example();}
-else if(state.result){const validation=checkPlan(state.result.input,state.result.plan);if(!validation.valid)state.result=null;else{state.result.validation=validation;dirty=JSON.stringify(state.input)!==JSON.stringify(state.result.input);}}
+if(!state || !canRestore(state.input))state=example();
 runs=readSaved(runsKey,[]);if(!Array.isArray(runs))runs=[];
 $('today').textContent=new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
 setTheme(document.documentElement.dataset.theme==='dark'?'dark':'light');
-renderForm();if(!state.result&&!validateInput(state.input).length)generate();else renderPlan();renderPrompt();renderRuns();route();
+// Render saved data immediately; recheck it with Python before accepting it.
+const savedResult=state.result;state.result=null;
+renderForm();renderPlan();renderRuns();route();
+try{
+  ({templates}=await api('/api/prompts'));
+  if(savedResult){const validation=await api('/api/check',{input:savedResult.input,plan:savedResult.plan});if(validation.valid){state.result={...savedResult,validation};dirty=JSON.stringify(state.input)!==JSON.stringify(savedResult.input);}}
+  if(!state.result){const {errors}=await api('/api/validate-input',{input:state.input});if(!errors.length)await generate();}
+  renderPlan();renderPrompt();
+}catch(error){$('form-errors').hidden=false;$('form-errors').textContent=error.message;}
 window.addEventListener('hashchange',route);
 $('theme-light').addEventListener('click',()=>setTheme('light',true));
 $('theme-dark').addEventListener('click',()=>setTheme('dark',true));
-$('planner-form').addEventListener('submit',event=>{event.preventDefault();if(generate()){toast('Your study plan is ready.');$('schedule-heading').scrollIntoView({block:'start',behavior:'smooth'});}});
+$('planner-form').addEventListener('submit',async event=>{event.preventDefault();if(await generate()){toast('Your study plan is ready.');$('schedule-heading').scrollIntoView({block:'start',behavior:'smooth'});}});
 $('start-date').addEventListener('change',event=>{state.input.startDate=event.target.value;markDirty();});
 $('subjects').addEventListener('input',event=>{const field=event.target.dataset.field;if(!field)return;const s=state.input.subjects.find(s=>s.id===event.target.closest('[data-id]').dataset.id);s[field]=field==='hours'?Number(event.target.value):event.target.value;markDirty();});
 $('subjects').addEventListener('click',event=>{const button=event.target.closest('[data-remove]');if(!button||state.input.subjects.length<=1)return;state.input.subjects=state.input.subjects.filter(s=>s.id!==button.dataset.remove);renderForm();markDirty();});
 $('add-subject').addEventListener('click',()=>{if(state.input.subjects.length>=12)return;state.input.subjects.push({id:'s-'+crypto.randomUUID().slice(0,8),name:'',examDate:Number.isFinite(Date.parse(state.input.startDate))?addDays(state.input.startDate,14):'',hours:5,priority:'medium'});renderForm();markDirty();$('subjects').lastElementChild.querySelector('input').focus();});
 $('availability').addEventListener('input',event=>{if(event.target.dataset.day===undefined)return;state.input.availability[Number(event.target.dataset.day)]=Number(event.target.value);markDirty();});
-$('load-example').addEventListener('click',()=>{state=example();validated=null;$('use-ai-plan').disabled=true;$('ai-validation').textContent='';$('repair-prompt').value='';renderForm();generate();renderPrompt();toast('Example loaded. Make it your own.');});
+$('load-example').addEventListener('click',async()=>{state=example();validated=null;$('use-ai-plan').disabled=true;$('ai-validation').textContent='';$('repair-prompt').value='';renderForm();await generate();renderPrompt();toast('Example loaded. Make it your own.');});
 $('start-fresh').addEventListener('click',()=>{state=fresh();dirty=false;page=0;validated=null;$('form-errors').hidden=true;$('use-ai-plan').disabled=true;$('ai-validation').textContent='';$('repair-prompt').value='';renderForm();save();renderPlan();renderPrompt();$('subjects').querySelector('input').focus();toast('Ready for your subjects.');});
 $('apply-daily-hours').addEventListener('click',()=>{const raw=$('daily-hours').value,hours=Number(raw);if(!raw||!Number.isFinite(hours)||hours<0||hours>12||!Number.isInteger(hours*4)){toast('Choose 0–12 hours in 15-minute increments, such as 1.5.');$('daily-hours').focus();return;}state.input.availability=Array(7).fill(hours);renderForm();markDirty();toast(`${hours} study hours applied to every day.`);});
 $('table-toggle').addEventListener('click',()=>{display='days';$('table-toggle').classList.add('selected');$('subjects-toggle').classList.remove('selected');$('table-toggle').setAttribute('aria-pressed','true');$('subjects-toggle').setAttribute('aria-pressed','false');renderPlan();});
 $('subjects-toggle').addEventListener('click',()=>{display='subjects';$('subjects-toggle').classList.add('selected');$('table-toggle').classList.remove('selected');$('subjects-toggle').setAttribute('aria-pressed','true');$('table-toggle').setAttribute('aria-pressed','false');renderPlan();});
-$('export-menu').addEventListener('click',()=>{if(state.result)download('studyflow-plan.csv',exportCsv(state.result.input,state.result.plan),'text/csv;charset=utf-8');});
+$('export-menu').addEventListener('click',async()=>{
+  if(!state.result)return;
+  try{const result=state.result;const response=await fetch('/api/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({input:result.input,plan:result.plan})});if(!response.ok)throw new Error((await response.json()).error);download('studyflow-plan.csv',await response.text(),'text/csv;charset=utf-8');}catch(error){toast(error.message||'Could not download the plan.');}
+});
 $('print-plan').addEventListener('click',()=>{if(!state.result)return;const oldDisplay=display;display='days';printing=true;renderPlan();window.print();printing=false;display=oldDisplay;renderPlan();});
 $('prompt-version').addEventListener('change',()=>{validated=null;$('use-ai-plan').disabled=true;renderPrompt();});
 $('copy-prompt').addEventListener('click',()=>copy($('prompt-text').value));
 $('download-prompt').addEventListener('click',()=>download(`P1-${$('prompt-version').value}.txt`,$('prompt-text').value));
 $('copy-repair').addEventListener('click',()=>{if($('repair-prompt').value)copy($('repair-prompt').value);else toast('Validate a failed response first.');});
 $('ai-response').addEventListener('input',()=>{validated=null;$('use-ai-plan').disabled=true;});
-$('validate-ai').addEventListener('click',()=>{
+$('validate-ai').addEventListener('click',async()=>{
   const model=$('model-name').value.trim();if(!model){toast('Enter the tool and model used for this run.');$('model-name').focus();return;}
-  const errors=validateInput(state.input);if(errors.length){$('ai-validation').textContent='Fix the planner inputs first: '+errors.join(' ');return;}
-  const raw=$('ai-response').value;let plan,validation,error;
-  try{plan=parseModelOutput(raw);validation=checkPlan(state.input,plan);}catch(e){error=e.message;}
-  const issues=error?[error]:[...validation.violations,...validation.coverage.filter(s=>s.remaining>0).map(s=>`${s.name}: ${s.remaining}h unallocated. If infeasible, keep the shortfall and explain why.`)];
-  $('ai-validation').innerHTML=error?`<div class="error-box">${escapeHtml(error)}</div>`:`<div class="notice ${validation.valid?'success':''}"><strong>${validation.checks.filter(c=>c.pass).length}/6 checks passed.</strong> ${validation.complete?'All study targets are covered.':'Some study targets remain uncovered.'}</div>${validation.violations.length?`<ul>${validation.violations.map(v=>`<li>${escapeHtml(v)}</li>`).join('')}</ul>`:''}`;
-  $('repair-prompt').value=issues.length?repairTemplate.replace('{issues}',issues.map(x=>'- '+x).join('\n')):'';
-  validated=validation?.valid?{plan:{days:[...plan.days].sort((a,b)=>a.date.localeCompare(b.date))},validation,input:structuredClone(state.input),source:'ai',generatedAt:new Date().toISOString()}:null;
-  $('use-ai-plan').disabled=!validated;
-  runs.push({timestamp:new Date().toISOString(),version:$('prompt-version').value,model,input:structuredClone(state.input),prompt:$('prompt-text').value,rawOutput:raw,validation:validation??null,error:error??null});
-  if(runs.length>100)runs=runs.slice(-100);saveRuns();renderRuns();
+  const input=structuredClone(state.input),raw=$('ai-response').value,version=$('prompt-version').value,prompt=$('prompt-text').value;
+  const button=$('validate-ai');button.disabled=true;$('use-ai-plan').disabled=true;validated=null;
+  try{
+    const result=await api('/api/validate-response',{input,rawOutput:raw});
+    if(JSON.stringify(input)!==JSON.stringify(state.input)||raw!==$('ai-response').value||version!==$('prompt-version').value)return;
+    if(result.inputErrors){$('ai-validation').textContent='Fix the planner inputs first: '+result.inputErrors.join(' ');return;}
+    const {plan,validation,error,repairPrompt}=result;
+    $('ai-validation').innerHTML=error?`<div class="error-box">${escapeHtml(error)}</div>`:`<div class="notice ${validation.valid?'success':''}"><strong>${validation.checks.filter(c=>c.pass).length}/6 checks passed.</strong> ${validation.complete?'All study targets are covered.':'Some study targets remain uncovered.'}</div>${validation.violations.length?`<ul>${validation.violations.map(v=>`<li>${escapeHtml(v)}</li>`).join('')}</ul>`:''}`;
+    $('repair-prompt').value=repairPrompt;
+    validated=validation?.valid?{plan,validation,input,source:'ai',engine:'python',generatedAt:new Date().toISOString()}:null;
+    $('use-ai-plan').disabled=!validated;
+    runs.push({timestamp:new Date().toISOString(),version,model,input,prompt,rawOutput:raw,validation:validation??null,error:error??null,engine:'python'});
+    if(runs.length>100)runs=runs.slice(-100);saveRuns();renderRuns();
+  }catch(error){$('ai-validation').textContent=error.message;}
+  finally{button.disabled=false;}
 });
 $('use-ai-plan').addEventListener('click',()=>{if(!validated)return;state.result=structuredClone(validated);dirty=false;page=0;save();renderPlan();location.hash='planner';toast('Checked AI schedule applied.');});
 $('export-evidence').addEventListener('click',()=>download('studyflow-ai-runs.json',JSON.stringify({exportedAt:new Date().toISOString(),runs},null,2),'application/json'));
 $('clear-runs').addEventListener('click',()=>{if(!runs.length)return;if(!window.confirm('Clear the saved AI experiment log on this device? Export it first if you need the evidence.'))return;runs=[];saveRuns();renderRuns();});
-try{const response=await fetch('./local-results.json');if(!response.ok)throw new Error('Unavailable');const data=await response.json();$('test-summary').textContent=`${data.results.filter(r=>r.pass).length} / ${data.results.length} passed`;$('evaluation-table').innerHTML=data.results.map(r=>`<tr><td>${escapeHtml(r.id)}</td><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.type)}</td><td>${escapeHtml(r.expected)}</td><td>${escapeHtml(r.actual)}</td><td class="${r.pass?'result-pass':'result-fail'}">${r.pass?'Pass':'Fail'}</td></tr>`).join('');}catch{$('test-summary').textContent='Results unavailable';$('evaluation-table').innerHTML='<tr><td colspan="6">Run npm run evaluate and rebuild to load local results.</td></tr>';}
+try{const data=await api('/api/evaluation');$('test-summary').textContent=`${data.results.filter(r=>r.pass).length} / ${data.results.length} passed`;$('evaluation-table').innerHTML=data.results.map(r=>`<tr><td>${escapeHtml(r.id)}</td><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.type)}</td><td>${escapeHtml(r.expected)}</td><td>${escapeHtml(r.actual)}</td><td class="${r.pass?'result-pass':'result-fail'}">${r.pass?'Pass':'Fail'}</td></tr>`).join('');}catch{$('test-summary').textContent='Results unavailable';$('evaluation-table').innerHTML='<tr><td colspan="6">Start the Python server and run python3 -m backend.evaluate to save the latest local results.</td></tr>';}
