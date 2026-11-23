@@ -1,0 +1,4 @@
+Create a day-wise exam study timetable from the following subjects, exam dates, target study hours, and weekly availability. Include what to study each day.
+
+Student input:
+{student_input}

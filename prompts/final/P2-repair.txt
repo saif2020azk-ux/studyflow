@@ -1,0 +1,4 @@
+Review your previous response against the original student input and generation prompt. Resolve these observed issues without breaking any hard constraints:
+{issues}
+
+Return the complete corrected JSON object only. Never invent availability, subject IDs or different exam dates. Include each planning date once. Keep sessions within daily limits and strictly before each subject's exam. If the targets cannot fit, preserve the hard constraints and leave the shortfall for the application to report.

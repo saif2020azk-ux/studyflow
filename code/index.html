@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Turn your subjects, exam dates, and free hours into a realistic study plan. Compare prompts and check AI-generated schedules.">
+  <meta name="theme-color" content="#6357db"><title>Studyflow — Make room for progress</title>
+  <link rel="icon" href="./icon.svg" type="image/svg+xml"><link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <a href="#planner" class="brand"><span class="brand-icon">s<span>f</span></span>studyflow<span class="brand-period">.</span></a>
+    <div class="workspace-label">YOUR WORKSPACE</div>
+    <nav aria-label="Main navigation">
+      <a href="#planner" data-view="planner" class="nav-item active"><span aria-hidden="true">▦</span> Study planner</a>
+      <a href="#lab" data-view="lab" class="nav-item"><span aria-hidden="true">⌘</span> Prompt lab <span class="nav-tag">3</span></a>
+      <a href="#evaluation" data-view="evaluation" class="nav-item"><span aria-hidden="true">◷</span> Evaluation</a>
+      <a href="#guide" data-view="guide" class="nav-item"><span aria-hidden="true">▤</span> Project guide</a>
+    </nav>
+    <div class="sidebar-note"><div class="note-icon" aria-hidden="true">✧</div><strong>A little structure.<br>A lot more headspace.</strong><p>Make a plan that fits your time, one study session at a time.</p><span class="note-lines" aria-hidden="true">╱╱╱╱╱╱</span></div>
+    <div class="sidebar-footer"><span class="avatar">S</span><div><strong>Student workspace</strong><small>Saved on this device</small></div></div>
+  </aside>
+  <main>
+    <header class="topbar"><div class="breadcrumb">Workspace <span>/</span> <strong id="breadcrumb">Study planner</strong></div><div class="topbar-right"><span id="today"></span><span class="topbar-divider"></span><span class="project-badge">C20 · MINI PROJECT</span></div></header>
+    <section id="planner-view" class="view">
+      <div class="page-heading"><div><div class="eyebrow">LESS OVERWHELM. MORE MOMENTUM.</div><h1>Your next exam,<br class="mobile-break"> meet your plan<span>.</span></h1><p>Bring your subjects. We’ll help you find the time.</p></div><button class="button secondary" id="load-example"><span aria-hidden="true">↻</span> Load example</button></div>
+      <div class="planner-grid">
+        <section class="card setup-card" aria-labelledby="setup-heading">
+          <div class="card-heading"><div class="heading-icon" aria-hidden="true">☷</div><div><h2 id="setup-heading">Make it yours</h2><p>A good plan starts with your reality.</p></div></div>
+          <form id="planner-form" novalidate>
+            <div class="field"><label for="start-date">When do you want to start?</label><input id="start-date" name="startDate" type="date" required></div>
+            <div class="section-heading"><h3>Your subjects</h3><span id="subject-count">3 subjects</span></div>
+            <div id="subjects"></div>
+            <button type="button" id="add-subject" class="add-subject">+ Add another subject</button>
+            <div class="section-heading availability-heading"><h3>Weekly availability</h3><span>hours / day</span></div>
+            <div id="availability" class="availability-grid"></div>
+            <p class="field-help">Use focused study time. Leave room for classes, meals, and breaks.</p>
+            <div id="form-errors" class="error-box" role="alert" hidden></div>
+            <button class="button primary full-width" type="submit"><span aria-hidden="true">✧</span> Generate my study plan</button>
+            <p class="privacy-note"><span aria-hidden="true">◇</span> Your details stay in this browser.</p>
+          </form>
+        </section>
+        <div class="plan-column">
+          <div class="summary-grid">
+            <div class="summary-card"><span class="summary-icon purple" aria-hidden="true">▤</span><div><strong id="stat-subjects">3</strong><span>subjects to focus on</span></div></div>
+            <div class="summary-card"><span class="summary-icon peach" aria-hidden="true">◷</span><div><strong id="stat-hours">0<span> hrs</span></strong><span>study time planned</span></div></div>
+            <div class="summary-card"><span class="summary-icon green" aria-hidden="true">▦</span><div><strong id="stat-days">0<span> days</span></strong><span>until your last exam</span></div></div>
+          </div>
+          <section class="card schedule-card" aria-labelledby="schedule-heading">
+            <div class="schedule-heading"><div><div class="title-with-badge"><h2 id="schedule-heading">Your study roadmap</h2><span id="source-badge" class="pill lavender">Local planner</span></div><p id="schedule-range">Your personalised plan will appear here.</p></div><button class="icon-button" id="export-menu" aria-label="Download study plan as CSV" title="Download CSV">⇩</button></div>
+            <div id="plan-message" role="status"></div>
+            <div class="schedule-toolbar"><div class="segmented" aria-label="Schedule display"><button id="table-toggle" class="selected" type="button" aria-pressed="true">Day by day</button><button id="subjects-toggle" type="button" aria-pressed="false">By subject</button></div><span class="small-muted">Study • Revise • Repeat</span></div>
+            <div id="schedule-content"></div>
+            <div id="pagination" class="pagination"></div>
+            <div class="schedule-footer"><span><span class="legend-dot"></span> Space for progress, and for breaks.</span><button id="print-plan" class="text-button">Print plan</button></div>
+          </section>
+          <section class="card validation-card"><div class="validation-heading"><span class="check-icon" aria-hidden="true">✓</span><div><h3>Built around your boundaries</h3><p id="validation-description">Every plan is checked against your study constraints.</p></div><span id="checks-count" class="pill mint">6 checks</span></div><div id="constraint-checks" class="constraint-checks"></div></section>
+          <div class="tip-banner"><span aria-hidden="true">☀</span><p><strong>Small sessions count.</strong> A little focused study today makes tomorrow feel lighter.</p></div>
+        </div>
+      </div>
+      <footer class="page-footer"><span>Made for your next small win.</span><span>Studyflow · Prompt Engineering Project</span></footer>
+    </section>
+    <section id="lab-view" class="view" hidden>
+      <div class="page-heading"><div><div class="eyebrow">THE PROMPT BEHIND THE PLAN</div><h1>A little experimentation<span>.</span></h1><p>Compare versions, run a real prompt, and check what comes back.</p></div></div>
+      <div class="lab-grid"><section class="card panel"><h2>Generate a prompt</h2><p class="muted">Uses the current subjects and availability from your planner.</p><div class="field"><label for="prompt-version">Prompt version</label><select id="prompt-version"><option value="v1">v1 · Baseline instructions</option><option value="v2">v2 · Explicit constraints + JSON</option><option value="v3" selected>v3 · Example + feasibility rules</option></select></div><div class="version-note" id="version-note"></div><label for="prompt-text" class="input-label">Full user prompt · P1</label><textarea id="prompt-text" class="code-input" rows="18" readonly spellcheck="false"></textarea><div class="button-row"><button id="copy-prompt" class="button primary">Copy prompt</button><button id="download-prompt" class="button secondary">Download prompt</button></div><p class="field-help">Run in your chosen AI tool with no system prompt and its default settings. Record the exact model name below. No API key is needed here.</p></section>
+      <section class="card panel"><h2>Check an AI response</h2><p class="muted">Paste the actual JSON response. Checks run in your browser.</p><div class="field"><label for="model-name">AI tool and model used</label><input id="model-name" placeholder="Enter the exact tool and model name" maxlength="120"></div><div class="field"><label for="ai-response">Model response</label><textarea id="ai-response" class="code-input" rows="14" spellcheck="false" placeholder='{"days":[{"date":"YYYY-MM-DD","sessions":[{"subjectId":"math","hours":1,"task":"Practise algebra"}]}]}'></textarea></div><div class="button-row"><button id="validate-ai" class="button primary">Validate response</button><button id="use-ai-plan" class="button secondary" disabled>Use this plan</button></div><div id="ai-validation" role="status"></div><hr><h3>Repair a failed response</h3><p class="muted">After validation, copy the violations back to your AI tool with the original prompt.</p><textarea id="repair-prompt" class="code-input" rows="5" readonly placeholder="A repair instruction appears when a response fails validation."></textarea><button id="copy-repair" class="text-button">Copy repair instruction</button></section></div>
+    </section>
+    <section id="evaluation-view" class="view" hidden>
+      <div class="page-heading"><div><div class="eyebrow">EVIDENCE OVER ASSUMPTIONS</div><h1>Put the plan to the test<span>.</span></h1><p>Local scheduling tests and actual AI runs, recorded separately.</p></div><button id="export-evidence" class="button secondary">Export run history</button></div>
+      <section class="card panel"><div class="section-heading"><h2>Local planner test suite</h2><span class="pill lavender" id="test-summary">Loading…</span></div><p class="muted">These results test the scheduling code. They do not measure AI prompt quality.</p><div class="table-scroll"><table><thead><tr><th>Test</th><th>Input / scenario</th><th>Type</th><th>Expected</th><th>Observed</th><th>Result</th></tr></thead><tbody id="evaluation-table"></tbody></table></div></section>
+      <section class="card panel spaced-panel"><div class="section-heading"><h2>Your AI experiment log</h2><span class="pill lavender" id="run-count">0 actual runs</span></div><p class="muted">Each validation records the input snapshot, prompt version, model label, actual response, and checks. Run all versions on the same inputs before comparing them.</p><div id="experiment-log"></div><button id="clear-runs" class="text-button danger-text">Clear saved AI runs</button></section>
+    </section>
+    <section id="guide-view" class="view" hidden>
+      <div class="page-heading"><div><div class="eyebrow">C20 · TIMETABLE AND STUDY PLAN GENERATOR</div><h1>From idea to evidence<span>.</span></h1><p>A focused prompt engineering project, with room to grow.</p></div></div>
+      <div class="guide-grid"><section class="card panel"><h2>How to use Studyflow</h2><ol class="guide-steps"><li><strong>Set your boundaries.</strong> Enter subjects, exam dates, target hours, and weekly availability.</li><li><strong>Make a local plan.</strong> Generate a checked timetable. Any unallocated work is shown clearly.</li><li><strong>Run the prompt experiment.</strong> In Prompt lab, copy v1 into your AI tool and save its actual response. Repeat with v2 and v3 on the same input.</li><li><strong>Validate and refine.</strong> Paste each JSON response, inspect the checks, and use the repair instruction if needed.</li><li><strong>Keep your evidence.</strong> Export the run history and save screenshots of actual runs for your report.</li></ol></section>
+      <section class="card panel"><h2>What the checks mean</h2><p class="muted">A valid schedule stays within your available hours, uses known subjects, includes each date once, and schedules study strictly before the subject’s exam.</p><p class="muted">Completeness is checked separately. A schedule can follow every boundary and still leave work unfinished. This is shown as a shortfall.</p><h3>Current scope</h3><p class="muted">Up to 12 subjects and 120 days; 15-minute increments; repeating weekly availability. Sessions are daily allocations, not exact clock times. Breaks must be excluded from the hours you enter.</p><h3>Your data</h3><p class="muted">Plans and experiment logs are stored in this browser. Only the prompt text you choose to copy is sent to an external AI tool by you. Use made-up data for demonstrations.</p></section>
+      <section class="card panel"><h2>Submission materials</h2><p class="muted">The source project includes prompt versions, test data, actual local test results, workflow diagrams, a technical report starter, a Milestone 2 outline, and a demo script.</p><p class="muted">Add your team details, real AI experiment results, screenshots, and final links before submitting. The hosted preview is private; evaluator access needs to be arranged separately.</p></section><section class="card panel"><h2>Prompt architecture</h2><div class="workflow"><span>Student constraints</span><b>↓</b><span>Versioned generation prompt · P1</span><b>↓</b><span>Actual model response</span><b>↓</b><span>Code-based constraint checks</span><b>↓</b><span>Repair instruction or checked timetable</span></div></section></div>
+    </section>
+  </main>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <script type="module" src="./app.mjs"></script>
+</body></html>

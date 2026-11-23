@@ -1,0 +1,10 @@
+import {cp,mkdir,readFile,writeFile} from 'node:fs/promises';
+await mkdir('dist',{recursive:true});
+await cp('code','dist',{recursive:true});
+const versions={};
+for(const version of ['v1','v2','v3']) versions[version]=await readFile(`prompts/${version}/P1-study-plan.txt`,'utf8');
+const repairTemplate=await readFile('prompts/final/P2-repair.txt','utf8');
+await writeFile('dist/prompt-templates.mjs',`export const templates = ${JSON.stringify(versions,null,2)};\nexport const repairTemplate = ${JSON.stringify(repairTemplate)};\n`);
+await cp('test-data/cases.json','dist/test-cases.json');
+await cp('test-data/local-results.json','dist/local-results.json');
+console.log('Built Studyflow into dist/.');
