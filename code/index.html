@@ -4,6 +4,7 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Turn your subjects, exam dates, and free hours into a realistic study plan. Compare prompts and check AI-generated schedules.">
   <meta name="theme-color" content="#6357db"><title>Studyflow — Make room for progress</title>
+  <script src="./theme-init.js"></script>
   <link rel="icon" href="./icon.svg" type="image/svg+xml"><link rel="stylesheet" href="./styles.css">
 </head>
 <body>
@@ -20,22 +21,26 @@
     <div class="sidebar-footer"><span class="avatar">S</span><div><strong>Student workspace</strong><small>Saved on this device</small></div></div>
   </aside>
   <main>
-    <header class="topbar"><div class="breadcrumb">Workspace <span>/</span> <strong id="breadcrumb">Study planner</strong></div><div class="topbar-right"><span id="today"></span><span class="topbar-divider"></span><span class="project-badge">C20 · MINI PROJECT</span></div></header>
+    <header class="topbar"><div class="breadcrumb">Workspace <span>/</span> <strong id="breadcrumb">Study planner</strong></div><div class="topbar-right"><span id="today"></span><div class="theme-switch" role="group" aria-label="Colour theme"><button id="theme-light" type="button" aria-pressed="false"><span aria-hidden="true">☀</span> Light</button><button id="theme-dark" type="button" aria-pressed="false"><span aria-hidden="true">☾</span> Dark</button></div></div></header>
     <section id="planner-view" class="view">
-      <div class="page-heading"><div><div class="eyebrow">LESS OVERWHELM. MORE MOMENTUM.</div><h1>Your next exam,<br class="mobile-break"> meet your plan<span>.</span></h1><p>Bring your subjects. We’ll help you find the time.</p></div><button class="button secondary" id="load-example"><span aria-hidden="true">↻</span> Load example</button></div>
+      <div class="page-heading"><div><div class="eyebrow">LESS OVERWHELM. MORE MOMENTUM.</div><h1>Your next exam,<br class="mobile-break"> meet your plan<span>.</span></h1><p>Add your subjects and free hours. Get a plan that fits.</p></div><div class="heading-actions"><button class="button secondary" id="load-example">Try an example</button><button class="button secondary" id="start-fresh">Start fresh</button></div></div>
+      <div class="getting-started" aria-label="How to make your plan"><div><span class="step-icon" aria-hidden="true">▤</span><p><strong>Add your subjects</strong><span>Exam dates and study hours needed</span></p></div><div><span class="step-icon" aria-hidden="true">◷</span><p><strong>Set your free time</strong><span>How many hours you can study each day</span></p></div><div><span class="step-icon" aria-hidden="true">✓</span><p><strong>Create your plan</strong><span>Review, download, or print your timetable</span></p></div></div>
+      <p id="example-hint" class="example-hint" hidden>You’re viewing an example. Edit the details below or choose <strong>Start fresh</strong> to make your own plan.</p>
       <div class="planner-grid">
         <section class="card setup-card" aria-labelledby="setup-heading">
-          <div class="card-heading"><div class="heading-icon" aria-hidden="true">☷</div><div><h2 id="setup-heading">Make it yours</h2><p>A good plan starts with your reality.</p></div></div>
+          <div class="card-heading"><div class="heading-icon" aria-hidden="true">☷</div><div><h2 id="setup-heading">Your study details</h2><p>Fill in what you know. You can change it later.</p></div></div>
           <form id="planner-form" novalidate>
             <div class="field"><label for="start-date">When do you want to start?</label><input id="start-date" name="startDate" type="date" required></div>
             <div class="section-heading"><h3>Your subjects</h3><span id="subject-count">3 subjects</span></div>
+            <p class="field-help">“Hours needed” means the total time you want to spend studying that subject.</p>
             <div id="subjects"></div>
             <button type="button" id="add-subject" class="add-subject">+ Add another subject</button>
-            <div class="section-heading availability-heading"><h3>Weekly availability</h3><span>hours / day</span></div>
+            <div class="section-heading availability-heading"><h3>Your free time</h3><span>hours / day</span></div>
+            <div class="quick-hours"><label for="daily-hours">Same hours every day?</label><div><input id="daily-hours" type="number" min="0" max="12" step="0.25" value="2" aria-describedby="availability-help"><button id="apply-daily-hours" type="button" class="button secondary">Apply to all days</button></div></div>
             <div id="availability" class="availability-grid"></div>
-            <p class="field-help">Use focused study time. Leave room for classes, meals, and breaks.</p>
+            <p id="availability-help" class="field-help">Adjust individual days above. Use 0 for a day off. Leave time for classes, meals, and breaks.</p>
             <div id="form-errors" class="error-box" role="alert" hidden></div>
-            <button class="button primary full-width" type="submit"><span aria-hidden="true">✧</span> Generate my study plan</button>
+            <button id="generate-plan" class="button primary full-width" type="submit"><span aria-hidden="true">✧</span> Create my study plan</button>
             <p class="privacy-note"><span aria-hidden="true">◇</span> Your details stay in this browser.</p>
           </form>
         </section>
@@ -46,7 +51,7 @@
             <div class="summary-card"><span class="summary-icon green" aria-hidden="true">▦</span><div><strong id="stat-days">0<span> days</span></strong><span>until your last exam</span></div></div>
           </div>
           <section class="card schedule-card" aria-labelledby="schedule-heading">
-            <div class="schedule-heading"><div><div class="title-with-badge"><h2 id="schedule-heading">Your study roadmap</h2><span id="source-badge" class="pill lavender">Local planner</span></div><p id="schedule-range">Your personalised plan will appear here.</p></div><button class="icon-button" id="export-menu" aria-label="Download study plan as CSV" title="Download CSV">⇩</button></div>
+            <div class="schedule-heading"><div><div class="title-with-badge"><h2 id="schedule-heading">Your study plan</h2><span id="source-badge" class="pill lavender">Local planner</span></div><p id="schedule-range">Your personalised plan will appear here.</p></div><button class="button secondary download-button" id="export-menu" aria-label="Download study plan as CSV">Download CSV</button></div>
             <div id="plan-message" role="status"></div>
             <div class="schedule-toolbar"><div class="segmented" aria-label="Schedule display"><button id="table-toggle" class="selected" type="button" aria-pressed="true">Day by day</button><button id="subjects-toggle" type="button" aria-pressed="false">By subject</button></div><span class="small-muted">Study • Revise • Repeat</span></div>
             <div id="schedule-content"></div>
@@ -60,7 +65,8 @@
       <footer class="page-footer"><span>Made for your next small win.</span><span>Studyflow · Prompt Engineering Project</span></footer>
     </section>
     <section id="lab-view" class="view" hidden>
-      <div class="page-heading"><div><div class="eyebrow">THE PROMPT BEHIND THE PLAN</div><h1>A little experimentation<span>.</span></h1><p>Compare versions, run a real prompt, and check what comes back.</p></div></div>
+      <div class="page-heading"><div><div class="eyebrow">THE PROMPT BEHIND THE PLAN</div><h1>A little experimentation<span>.</span></h1><p>Optional: compare AI prompts and check the schedules they produce.</p></div></div>
+      <div class="lab-instructions"><strong>New here?</strong> Copy a prompt below, run it in your AI tool, then paste its response on this page. You can use the Study planner without this step.</div>
       <div class="lab-grid"><section class="card panel"><h2>Generate a prompt</h2><p class="muted">Uses the current subjects and availability from your planner.</p><div class="field"><label for="prompt-version">Prompt version</label><select id="prompt-version"><option value="v1">v1 · Baseline instructions</option><option value="v2">v2 · Explicit constraints + JSON</option><option value="v3" selected>v3 · Example + feasibility rules</option></select></div><div class="version-note" id="version-note"></div><label for="prompt-text" class="input-label">Full user prompt · P1</label><textarea id="prompt-text" class="code-input" rows="18" readonly spellcheck="false"></textarea><div class="button-row"><button id="copy-prompt" class="button primary">Copy prompt</button><button id="download-prompt" class="button secondary">Download prompt</button></div><p class="field-help">Run in your chosen AI tool with no system prompt and its default settings. Record the exact model name below. No API key is needed here.</p></section>
       <section class="card panel"><h2>Check an AI response</h2><p class="muted">Paste the actual JSON response. Checks run in your browser.</p><div class="field"><label for="model-name">AI tool and model used</label><input id="model-name" placeholder="Enter the exact tool and model name" maxlength="120"></div><div class="field"><label for="ai-response">Model response</label><textarea id="ai-response" class="code-input" rows="14" spellcheck="false" placeholder='{"days":[{"date":"YYYY-MM-DD","sessions":[{"subjectId":"math","hours":1,"task":"Practise algebra"}]}]}'></textarea></div><div class="button-row"><button id="validate-ai" class="button primary">Validate response</button><button id="use-ai-plan" class="button secondary" disabled>Use this plan</button></div><div id="ai-validation" role="status"></div><hr><h3>Repair a failed response</h3><p class="muted">After validation, copy the violations back to your AI tool with the original prompt.</p><textarea id="repair-prompt" class="code-input" rows="5" readonly placeholder="A repair instruction appears when a response fails validation."></textarea><button id="copy-repair" class="text-button">Copy repair instruction</button></section></div>
     </section>

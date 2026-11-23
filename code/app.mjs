@@ -5,7 +5,16 @@ const escapeHtml=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&
 const colors=[['#8a70ca','#f1ebfc'],['#549a89','#e9f5ef'],['#cb9264','#fff1e8'],['#678cbe','#eaf1fc'],['#bc789c','#faeaf2'],['#9a9b53','#f4f5e6']];
 const storageKey='studyflow.workspace.v1',runsKey='studyflow.runs.v1';
 let state,dirty=false,page=0,display='days',validated=null,runs=[],toastTimer,printing=false;
-function example(){const start=localDate();return {input:{startDate:start,availability:[3,3,2,3,2,4,3],subjects:[{id:'math',name:'Mathematics',examDate:addDays(start,7),hours:8,priority:'high'},{id:'physics',name:'Physics',examDate:addDays(start,10),hours:7,priority:'medium'},{id:'cs',name:'Computer Science',examDate:addDays(start,13),hours:6,priority:'medium'}]},result:null};}
+function example(){const start=localDate();return {isExample:true,input:{startDate:start,availability:[3,3,2,3,2,4,3],subjects:[{id:'math',name:'Mathematics',examDate:addDays(start,7),hours:8,priority:'high'},{id:'physics',name:'Physics',examDate:addDays(start,10),hours:7,priority:'medium'},{id:'cs',name:'Computer Science',examDate:addDays(start,13),hours:6,priority:'medium'}]},result:null};}
+function fresh(){const start=localDate();return {isExample:false,input:{startDate:start,availability:[2,2,2,2,2,2,2],subjects:[{id:'s-'+crypto.randomUUID().slice(0,8),name:'',examDate:addDays(start,14),hours:5,priority:'medium'}]},result:null};}
+function canRestore(input){return input&&typeof input.startDate==='string'&&Array.isArray(input.availability)&&input.availability.length===7&&input.availability.every(h=>Number.isFinite(h))&&Array.isArray(input.subjects)&&input.subjects.length>0&&input.subjects.length<=12&&input.subjects.every(s=>s&&typeof s.id==='string'&&typeof s.name==='string'&&typeof s.examDate==='string'&&Number.isFinite(s.hours)&&['low','medium','high'].includes(s.priority));}
+function setTheme(theme,persist=false){
+  document.documentElement.dataset.theme=theme;
+  document.documentElement.style.colorScheme=theme;
+  for(const name of ['light','dark'])$('theme-'+name).setAttribute('aria-pressed',String(theme===name));
+  document.querySelector('meta[name="theme-color"]').content=theme==='dark'?'#10131e':'#6357db';
+  if(persist)try{localStorage.setItem('studyflow.theme',theme);}catch{toast('Theme changed. Browser storage is unavailable, so it cannot be remembered.');}
+}
 function readSaved(key,fallback){try{return JSON.parse(localStorage.getItem(key))??fallback;}catch{return fallback;}}
 function save(){try{localStorage.setItem(storageKey,JSON.stringify(state));}catch{toast('Browser storage is unavailable. Export your plan to keep it.');}}
 function saveRuns(){try{localStorage.setItem(runsKey,JSON.stringify(runs));}catch{toast('Run history could not be saved. Export it before leaving.');}}
@@ -16,7 +25,7 @@ async function copy(text){try{await navigator.clipboard.writeText(text);toast('C
 function colorFor(id){const i=state.input.subjects.findIndex(s=>s.id===id);return colors[Math.max(i,0)%colors.length];}
 function renderForm(){
   $('start-date').value=state.input.startDate;
-  $('subjects').innerHTML=state.input.subjects.map((s,i)=>`<div class="subject-row" data-id="${escapeHtml(s.id)}" style="--subject-color:${colors[i%colors.length][0]}"><div class="subject-top"><input data-field="name" aria-label="Subject ${i+1} name" value="${escapeHtml(s.name)}" maxlength="60" placeholder="Subject name"><button type="button" class="remove-subject" data-remove="${escapeHtml(s.id)}" aria-label="Remove ${escapeHtml(s.name||'subject')}" ${state.input.subjects.length===1?'disabled':''}>×</button></div><div class="subject-fields"><div><label for="exam-${i}">Exam date</label><input id="exam-${i}" type="date" data-field="examDate" value="${escapeHtml(s.examDate)}"></div><div><label for="hours-${i}">Study hrs</label><input id="hours-${i}" type="number" data-field="hours" min="0.25" max="200" step="0.25" value="${s.hours}"></div><div><label for="priority-${i}">Priority</label><select id="priority-${i}" data-field="priority">${['low','medium','high'].map(p=>`<option value="${p}" ${s.priority===p?'selected':''}>${p[0].toUpperCase()+p.slice(1)}</option>`).join('')}</select></div></div></div>`).join('');
+  $('subjects').innerHTML=state.input.subjects.map((s,i)=>`<div class="subject-row" data-id="${escapeHtml(s.id)}" style="--subject-color:${colors[i%colors.length][0]}"><div class="subject-top"><div><label for="subject-${i}">Subject name</label><input id="subject-${i}" data-field="name" aria-label="Subject ${i+1} name" value="${escapeHtml(s.name)}" maxlength="60" placeholder="e.g. Mathematics"></div><button type="button" class="remove-subject" data-remove="${escapeHtml(s.id)}" aria-label="Remove ${escapeHtml(s.name||'subject')}" ${state.input.subjects.length===1?'disabled':''}>×</button></div><div class="subject-fields"><div><label for="exam-${i}">Exam date</label><input id="exam-${i}" type="date" data-field="examDate" value="${escapeHtml(s.examDate)}"></div><div><label for="hours-${i}">Hours needed</label><input id="hours-${i}" aria-label="Total study hours needed for subject ${i+1}" type="number" data-field="hours" min="0.25" max="200" step="0.25" value="${s.hours}"></div><div><label for="priority-${i}">Priority</label><select id="priority-${i}" data-field="priority">${['low','medium','high'].map(p=>`<option value="${p}" ${s.priority===p?'selected':''}>${p[0].toUpperCase()+p.slice(1)}</option>`).join('')}</select></div></div></div>`).join('');
   $('subject-count').textContent=`${state.input.subjects.length} subject${state.input.subjects.length===1?'':'s'}`;
   $('add-subject').disabled=state.input.subjects.length>=12;
   $('availability').innerHTML=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((day,i)=>`<label>${day}<input type="number" min="0" max="12" step="0.25" value="${state.input.availability[i]}" data-day="${i}" aria-label="${day} available study hours"></label>`).join('');
@@ -25,6 +34,7 @@ function renderPlan(){
   const result=state.result;
   const input=result?.input??state.input;
   const validation=result?.validation;
+  $('example-hint').hidden=!state.isExample;
   const dayCount=result?.plan?.days.length??0;
   $('stat-subjects').textContent=input.subjects.length;
   $('stat-hours').innerHTML=`${validation?.scheduledHours??0}<span> hrs</span>`;
@@ -33,7 +43,7 @@ function renderPlan(){
   $('schedule-range').textContent=result ? `${dateLabel(input.startDate)} – ${dateLabel(addDays(input.startDate,dayCount-1))} · ${dayCount} days, at your pace` : 'Your personalised plan will appear here.';
   $('plan-message').innerHTML=dirty?'<div class="draft-note">Your details have changed. Generate a new plan to apply them. The timetable below shows your previous inputs.</div>':validation&&!validation.complete?`<div class="notice"><strong>Some work needs more time.</strong> ${validation.coverage.filter(s=>s.remaining>0).map(s=>`${escapeHtml(s.name)}: ${s.remaining}h left`).join(' · ')}. Add availability, reduce your targets, or review your dates.</div>`:'';
   $('export-menu').disabled=!result;$('print-plan').disabled=!result;
-  if(!result){$('schedule-content').innerHTML='<div class="empty-state">Add your details and generate your first study plan.</div>';$('pagination').innerHTML='';return;}
+  if(!result){$('schedule-content').innerHTML='<div class="empty-state"><strong>Your plan starts here.</strong><p>Add your subjects and free hours, then select <strong>Create my study plan</strong>.</p></div>';$('pagination').innerHTML='';$('checks-count').textContent='Not checked yet';$('validation-description').textContent='We’ll check your dates and hours when you create your plan.';$('constraint-checks').innerHTML='';return;}
   if(display==='subjects'){
     $('schedule-content').innerHTML=validation.coverage.map((s,i)=>`<div class="coverage-row" style="--subject-color:${colors[i%colors.length][0]}"><div class="coverage-title"><strong>${escapeHtml(s.name)}</strong><span>${s.scheduled} / ${s.required} hrs</span></div><div class="progress-track"><div class="progress-fill" style="width:${Math.min(100,s.scheduled/s.required*100)}%"></div></div><div class="coverage-caption">Exam ${dateLabel(input.subjects.find(x=>x.id===s.subjectId).examDate)}${s.remaining?` · ${s.remaining}h still to allocate`:' · Target covered'}</div></div>`).join('');
     $('pagination').innerHTML='';
@@ -49,8 +59,8 @@ function renderPlan(){
   $('validation-description').textContent=validation.complete?'Your study targets fit within your available time.':'The schedule respects your limits. Some study targets need more time.';
   $('constraint-checks').innerHTML=validation.checks.map(c=>`<span class="constraint-check ${c.pass?'':'failed'}"><b>${c.pass?'✓':'×'}</b> ${escapeHtml(c.name)}</span>`).join('');
 }
-function markDirty(){dirty=true;validated=null;$('use-ai-plan').disabled=true;$('ai-validation').textContent='';$('repair-prompt').value='';save();renderPlan();renderPrompt();}
-function generate(){const result=generatePlan(state.input);$('form-errors').hidden=result.ok;if(!result.ok){$('form-errors').textContent=result.errors.join(' ');return false;}state.result={...result,input:structuredClone(state.input)};dirty=false;page=0;save();renderPlan();return true;}
+function markDirty(){dirty=!!state.result;state.isExample=false;validated=null;$('use-ai-plan').disabled=true;$('ai-validation').textContent='';$('repair-prompt').value='';if(!$('form-errors').hidden){const errors=validateInput(state.input);$('form-errors').hidden=!errors.length;$('form-errors').textContent=errors.join(' ');}save();renderPlan();renderPrompt();}
+function generate(){const result=generatePlan(state.input);$('form-errors').hidden=result.ok;if(!result.ok){$('form-errors').textContent=result.errors.join(' ');$('form-errors').scrollIntoView({block:'center',behavior:'smooth'});return false;}state.result={...result,input:structuredClone(state.input)};dirty=false;page=0;save();renderPlan();return true;}
 const versionNotes={v1:'Baseline: a simple planning instruction. No enforced schema or explicit feasibility policy. Its response may need format repair; record this as a limitation.',v2:'Adds subject IDs, JSON output, date coverage, and hard limits. Targets are explicit, but the treatment of impossible requests is less detailed.',v3:'Adds a worked example, strict 15-minute increments, infeasibility handling, and self-check instructions. Improvements must be measured with actual model runs.'};
 function renderPrompt(){const version=$('prompt-version').value;$('version-note').textContent=versionNotes[version];$('prompt-text').value=templates[version].replace('{student_input}',JSON.stringify(state.input,null,2));}
 function renderRuns(){
@@ -59,19 +69,24 @@ function renderRuns(){
 }
 function route(){const view=['planner','lab','evaluation','guide'].includes(location.hash.slice(1))?location.hash.slice(1):'planner';for(const id of ['planner','lab','evaluation','guide'])$(`${id}-view`).hidden=id!==view;document.querySelectorAll('[data-view]').forEach(a=>a.classList.toggle('active',a.dataset.view===view));$('breadcrumb').textContent={planner:'Study planner',lab:'Prompt lab',evaluation:'Evaluation',guide:'Project guide'}[view];if(view==='lab')renderPrompt();if(view==='evaluation')renderRuns();}
 state=readSaved(storageKey,null);
-if(!state || validateInput(state.input).length){state=example();}
+if(!state || !canRestore(state.input)){state=example();}
 else if(state.result){const validation=checkPlan(state.result.input,state.result.plan);if(!validation.valid)state.result=null;else{state.result.validation=validation;dirty=JSON.stringify(state.input)!==JSON.stringify(state.result.input);}}
 runs=readSaved(runsKey,[]);if(!Array.isArray(runs))runs=[];
 $('today').textContent=new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
-renderForm();if(!state.result)generate();else renderPlan();renderPrompt();renderRuns();route();
+setTheme(document.documentElement.dataset.theme==='dark'?'dark':'light');
+renderForm();if(!state.result&&!validateInput(state.input).length)generate();else renderPlan();renderPrompt();renderRuns();route();
 window.addEventListener('hashchange',route);
-$('planner-form').addEventListener('submit',event=>{event.preventDefault();if(generate())toast('Your study plan is ready.');});
+$('theme-light').addEventListener('click',()=>setTheme('light',true));
+$('theme-dark').addEventListener('click',()=>setTheme('dark',true));
+$('planner-form').addEventListener('submit',event=>{event.preventDefault();if(generate()){toast('Your study plan is ready.');$('schedule-heading').scrollIntoView({block:'start',behavior:'smooth'});}});
 $('start-date').addEventListener('change',event=>{state.input.startDate=event.target.value;markDirty();});
 $('subjects').addEventListener('input',event=>{const field=event.target.dataset.field;if(!field)return;const s=state.input.subjects.find(s=>s.id===event.target.closest('[data-id]').dataset.id);s[field]=field==='hours'?Number(event.target.value):event.target.value;markDirty();});
 $('subjects').addEventListener('click',event=>{const button=event.target.closest('[data-remove]');if(!button||state.input.subjects.length<=1)return;state.input.subjects=state.input.subjects.filter(s=>s.id!==button.dataset.remove);renderForm();markDirty();});
 $('add-subject').addEventListener('click',()=>{if(state.input.subjects.length>=12)return;state.input.subjects.push({id:'s-'+crypto.randomUUID().slice(0,8),name:'',examDate:Number.isFinite(Date.parse(state.input.startDate))?addDays(state.input.startDate,14):'',hours:5,priority:'medium'});renderForm();markDirty();$('subjects').lastElementChild.querySelector('input').focus();});
 $('availability').addEventListener('input',event=>{if(event.target.dataset.day===undefined)return;state.input.availability[Number(event.target.dataset.day)]=Number(event.target.value);markDirty();});
 $('load-example').addEventListener('click',()=>{state=example();validated=null;$('use-ai-plan').disabled=true;$('ai-validation').textContent='';$('repair-prompt').value='';renderForm();generate();renderPrompt();toast('Example loaded. Make it your own.');});
+$('start-fresh').addEventListener('click',()=>{state=fresh();dirty=false;page=0;validated=null;$('form-errors').hidden=true;$('use-ai-plan').disabled=true;$('ai-validation').textContent='';$('repair-prompt').value='';renderForm();save();renderPlan();renderPrompt();$('subjects').querySelector('input').focus();toast('Ready for your subjects.');});
+$('apply-daily-hours').addEventListener('click',()=>{const raw=$('daily-hours').value,hours=Number(raw);if(!raw||!Number.isFinite(hours)||hours<0||hours>12||!Number.isInteger(hours*4)){toast('Choose 0–12 hours in 15-minute increments, such as 1.5.');$('daily-hours').focus();return;}state.input.availability=Array(7).fill(hours);renderForm();markDirty();toast(`${hours} study hours applied to every day.`);});
 $('table-toggle').addEventListener('click',()=>{display='days';$('table-toggle').classList.add('selected');$('subjects-toggle').classList.remove('selected');$('table-toggle').setAttribute('aria-pressed','true');$('subjects-toggle').setAttribute('aria-pressed','false');renderPlan();});
 $('subjects-toggle').addEventListener('click',()=>{display='subjects';$('subjects-toggle').classList.add('selected');$('table-toggle').classList.remove('selected');$('subjects-toggle').setAttribute('aria-pressed','true');$('table-toggle').setAttribute('aria-pressed','false');renderPlan();});
 $('export-menu').addEventListener('click',()=>{if(state.result)download('studyflow-plan.csv',exportCsv(state.result.input,state.result.plan),'text/csv;charset=utf-8');});

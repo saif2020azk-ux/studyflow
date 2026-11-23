@@ -17,6 +17,9 @@ Open http://127.0.0.1:5173. For static hosting, run `npm run build` and serve `d
 
 ## Features
 
+- Light/Dark theme buttons with a saved preference; first visit follows the device theme.
+- Quick-start guide, clearly marked example, Start fresh, and one-click hours for every day.
+- Clear field labels, a visible CSV download button and mobile-friendly navigation. Unfinished drafts survive a reload.
 - Up to 12 subjects and a 120-day planning period, with 15-minute increments.
 - Earliest-exam-first local scheduler with explicit shortfall reporting.
 - Six code-based constraint checks, plus target-completeness checks.
@@ -51,7 +54,7 @@ CHANGELOG.md      Dated implementation changes
 
 Team ID/name, faculty/batch, members/enrollment numbers, agreed contribution percentages, Milestone 1 materials, actual AI runs and comparison, screenshots, final PDFs, presentation, LinkedIn post, and recorded videos. Documentation is a starter and must be completed with genuine evidence. No course submission or public social post has been made.
 
-Verification: 26 Node tests and 16 saved local scenarios pass. Real Chrome smoke checks cover the initial plan, adding/removing subjects, overload handling, prompt generation, JSON rejection, response import with an explicitly synthetic fixture, and desktop/mobile layout. The fixture import is not model evaluation evidence. Screenshots in docs/local-planner-desktop.png and docs/local-planner-mobile.png show real local scheduler runs.
+Verification: 26 Node tests and 16 saved local scenarios pass. Real Chrome smoke checks cover theme selection and reload persistence, initial device theme, unfinished draft recovery, Start fresh, quick daily hours, print colours, the initial plan, adding/removing subjects, overload handling, prompt generation, JSON rejection, response import with an explicitly synthetic fixture, and every view on desktop/mobile. The fixture import is not model evaluation evidence. Screenshots in docs/ show real local scheduler runs in light and dark themes.
 
 The Sites deployment starts owner-private; evaluator access must be arranged before using it as a submission link. Local Git is connected to Sites source storage; this is not automatically a public GitHub repository.
 

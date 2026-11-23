@@ -20,14 +20,44 @@ try{
   const evaluate=async expression=>{const r=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw new Error(JSON.stringify(r.exceptionDetails));return r.result.value;};
   const wait=async expression=>{for(let i=0;i<100;i++){if(await evaluate(expression))return;await new Promise(r=>setTimeout(r,100));}throw new Error('Browser condition timed out: '+expression);};
   await send('Runtime.enable');await send('Page.enable');
+  await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-color-scheme',value:'dark'}]});
   await send('Emulation.setDeviceMetricsOverride',{width:1440,height:1100,deviceScaleFactor:1,mobile:false});
   await send('Page.navigate',{url:'http://127.0.0.1:5173'});
   await wait('document.getElementById("stat-hours")?.textContent.includes("21")');
+  assert.equal(await evaluate('document.documentElement.dataset.theme'),'dark');
+  assert.equal(await evaluate('document.getElementById("theme-dark").getAttribute("aria-pressed")'),'true');
+  await evaluate('document.getElementById("theme-light").click()');
+  assert.equal(await evaluate('localStorage.getItem("studyflow.theme")'),'light');
+  await send('Page.reload');
+  await wait('document.getElementById("stat-hours")?.textContent.includes("21")');
+  assert.equal(await evaluate('document.documentElement.dataset.theme'),'light');
+  assert.equal(await evaluate('document.getElementById("theme-light").getAttribute("aria-pressed")'),'true');
   assert.equal(await evaluate('document.getElementById("checks-count").textContent'),'6 / 6 passed');
   await wait('document.getElementById("evaluation-table").children.length===16');
   assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth'));
   const shot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
   await writeFile('docs/local-planner-desktop.png',Buffer.from(shot.data,'base64'));
+  await evaluate('document.getElementById("theme-dark").click()');
+  const darkShot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
+  await writeFile('docs/local-planner-dark-desktop.png',Buffer.from(darkShot.data,'base64'));
+  for(const view of ['lab','evaluation','guide','planner']){
+    await evaluate(`location.hash=${JSON.stringify(view)}`);
+    await wait(`!document.getElementById('${view}-view').hidden`);
+    assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth'));
+  }
+  await evaluate('document.getElementById("start-fresh").click()');
+  assert.equal(await evaluate('document.querySelectorAll(".subject-row").length'),1);
+  assert.ok(await evaluate('document.getElementById("schedule-content").textContent.includes("Your plan starts here")'));
+  assert.equal(await evaluate('document.getElementById("checks-count").textContent'),'Not checked yet');
+  await evaluate('document.getElementById("daily-hours").value="1.5";document.getElementById("apply-daily-hours").click()');
+  assert.deepEqual(await evaluate('[...document.querySelectorAll("[data-day]")].map(i=>Number(i.value))'),[1.5,1.5,1.5,1.5,1.5,1.5,1.5]);
+  await send('Page.reload');
+  await wait('document.querySelectorAll(".subject-row").length===1');
+  assert.equal(await evaluate('document.querySelector("[data-field=name]").value'),'');
+  assert.equal(await evaluate('document.documentElement.dataset.theme'),'dark');
+  await evaluate('document.getElementById("planner-form").requestSubmit()');
+  assert.equal(await evaluate('document.getElementById("form-errors").hidden'),false);
+  await evaluate('document.getElementById("load-example").click();document.getElementById("theme-light").click();document.getElementById("toast").hidden=true');
   await evaluate('document.getElementById("add-subject").click()');
   assert.equal(await evaluate('document.querySelectorAll(".subject-row").length'),4);
   await evaluate('document.querySelector(".subject-row:last-child .remove-subject").click()');
@@ -51,9 +81,21 @@ try{
   await evaluate('localStorage.removeItem("studyflow.runs.v1");document.getElementById("load-example").click();document.getElementById("toast").hidden=true');
   await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
   assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth'));
+  assert.ok(await evaluate('document.getElementById("theme-dark").getBoundingClientRect().right <= innerWidth'));
   const mobile=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
   await writeFile('docs/local-planner-mobile.png',Buffer.from(mobile.data,'base64'));
+  await evaluate('document.getElementById("theme-dark").click()');
+  const darkMobile=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
+  await writeFile('docs/local-planner-dark-mobile.png',Buffer.from(darkMobile.data,'base64'));
+  for(const view of ['lab','evaluation','guide','planner']){
+    await evaluate(`location.hash=${JSON.stringify(view)}`);
+    await wait(`!document.getElementById('${view}-view').hidden`);
+    assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth'));
+  }
+  await send('Emulation.setEmulatedMedia',{media:'print'});
+  assert.equal(await evaluate('getComputedStyle(document.documentElement).getPropertyValue("--surface").trim()'),'#fff');
+  await send('Emulation.setEmulatedMedia',{media:'screen'});
   assert.deepEqual(errors,[]);
-  console.log('Browser QA passed: initial plan, constraint checks, test display, add/remove subject, overload, prompt generation, JSON rejection, fixture import, and desktop/mobile overflow.');
+  console.log('Browser QA passed: light/dark selection and persistence, system theme default, draft persistence, start fresh, quick hours, print colours, initial plan, constraints, add/remove subjects, overload, prompts, fixture import, and all desktop/mobile views.');
   console.log('Screenshots saved in docs/. The import fixture is not AI evaluation evidence.');
 }finally{ws?.close();chrome.kill('SIGTERM');}

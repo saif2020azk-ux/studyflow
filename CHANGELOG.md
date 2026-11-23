@@ -1,6 +1,9 @@
 # Changelog
 
 ## 2026-11-23
+- Simplified getting started with a quick guide, clearly labelled example, Start fresh, and one-click daily availability.
+- Added Light/Dark theme selection, system preference on first visit, saved theme choice, and print-friendly colours.
+- Improved field labels, visible CSV download, mobile navigation, validation feedback, and unfinished draft recovery.
 - Started the Studyflow prototype for problem C20.
 - Added the local scheduler and independent constraint validator.
 - Added a responsive planner, manual AI prompt workflow, versioned prompt templates and exportable experiment history.
