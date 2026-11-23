@@ -17,7 +17,7 @@ python3 app.py
 
 Open http://127.0.0.1:5173. `python3 app.py --port 5174` selects a different port. The server serves the frontend directly; no build step is needed. `python3 -m backend.evaluate` saves measured Python results to test-data/local-results.json.
 
-The application now requires a running Python backend and cannot be served as a static-only site. The previously published Sites preview remains the earlier JavaScript version; this Python migration is local and has not been published.
+The application requires a running Python backend. To host it online, use a Python-capable host; uploading the source to GitHub does not deploy the app.
 
 ## Features
 
@@ -51,7 +51,6 @@ code/             HTML/CSS and JavaScript browser interface (no scheduling algor
 prompts/          v1/, v2/, v3/, final/
 test-data/        Cases and measured local outputs
 tests/            Python unittest coverage for scheduling, validation, CSV and real HTTP endpoints
-scripts/          Optional real-browser QA helper (requires Node.js and installed Chrome)
 docs/             Workflow, report outline, supporting draft, reel script
 CHANGELOG.md      Dated implementation changes
 ```
@@ -60,9 +59,7 @@ CHANGELOG.md      Dated implementation changes
 
 Team ID/name, faculty/batch, members/enrollment numbers, agreed contribution percentages, Milestone 1 materials, actual AI runs and comparison, screenshots, final PDFs, presentation, LinkedIn post, and recorded videos. Documentation is a starter and must be completed with genuine evidence. No course submission or public social post has been made.
 
-Verification: all 34 Python unit/API tests pass, covering the engine, malformed input and model responses, CSV safety, static-file boundaries, and HTTP endpoints. All 16 original scheduling scenarios pass with Python; migration checks also matched the prior JavaScript schedules. Real Chrome checks passed for the Python-backed app, themes, draft recovery, scheduling, response import and desktop/mobile views. Fixture imports are not AI evaluation evidence. Screenshots in docs/ show real local scheduler runs.
-
-The earlier Sites deployment is owner-private; evaluator access must be arranged before using it as a submission link. The GitHub destination for the Python source is saif2020azk-ux/studyflow. Publishing source does not deploy the Python application.
+Verification: all 34 Python unit/API tests pass, covering the engine, malformed input and model responses, CSV safety, static-file boundaries, and HTTP endpoints. All 16 original scheduling scenarios pass with Python. Local scheduling tests do not evaluate AI prompt quality. The two desktop screenshots in docs/ show real local scheduler runs in light and dark themes.
 
 ## Privacy and limitations
 

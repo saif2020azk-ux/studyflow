@@ -3,7 +3,7 @@
 This is a working outline, not a completed submission. Do not submit placeholders.
 
 ## 1. Cover page
-Enter the existing Team ID, team name, approved project title, batch, faculty name, member names and enrollment numbers. Add prototype, source repository and reel links. The Sites preview is private; arrange evaluator-accessible hosting/sharing before submission.
+Enter the existing Team ID, team name, approved project title, batch, faculty name, member names and enrollment numbers. Add prototype, source repository and reel links. Arrange an evaluator-accessible Python prototype before submission.
 
 ## 2. Prompt and solution design
 Describe the student scheduling problem, inputs/outputs, one generation prompt plus any repair prompt actually used, chosen external AI tool/model, settings, and real changes since Milestone 1. Include the workflow, task decomposition, input–output flow, and architecture from workflow.md as rendered diagrams. No Milestone 1 work has been provided, so historical claims are pending.

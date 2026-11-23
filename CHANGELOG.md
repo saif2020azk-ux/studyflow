@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-24
+- Removed the unused Sites manifest, Node browser-check script, empty requirements file, and redundant mobile screenshot variants.
+- Cleaned local legacy build output, Python caches, and the temporary source ZIP.
+- Kept the Python runtime, tests, prompt history, evaluation evidence, report drafts, and light/dark desktop screenshots.
+- Updated setup and repository documentation to describe the current Python project.
+
 ## 2026-11-23
 - Migrated scheduling, validation, model-response parsing, CSV export, evaluation and HTTP serving to Python.
 - Replaced Node runtime/build scripts with python3 app.py and standard-library tests; kept the browser interface and themes.

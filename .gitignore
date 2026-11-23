@@ -6,6 +6,7 @@ dist/
 !.env.example
 *.log
 .sites-local/
+.openai/
 __pycache__/
 *.py[cod]
 .venv/
