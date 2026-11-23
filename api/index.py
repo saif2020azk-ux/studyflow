@@ -7,7 +7,7 @@ class handler(Handler):
     def restore_route(self):
         parsed = urlsplit(self.path)
         # Support both the original URL and the rewritten function URL.
-        if parsed.path in ("/api/index", "/api/index.py"):
+        if parsed.path in ("/api", "/api/index", "/api/index.py"):
             self.path = parse_qs(parsed.query).get("__path", ["/"])[-1]
             if not self.path.startswith("/") or self.path.startswith("//"):
                 self.path = "/invalid-route"
