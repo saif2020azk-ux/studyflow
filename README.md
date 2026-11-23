@@ -4,6 +4,8 @@ Timetable and study plan generator for Prompt Engineering problem **C20**. Enter
 
 GitHub repository: https://github.com/saif2020azk-ux/studyflow
 
+Live website: https://studyflow-flax-tau.vercel.app
+
 ## Run locally
 
 Requires **Python 3.10 or newer**. No pip packages, Node.js, or API keys are needed to run the application.
@@ -24,6 +26,8 @@ The application requires a running Python backend. To host it online, use a Pyth
 The project includes a dependency-free Python function entry point at `api/index.py`, a Python 3.12 selection in `.python-version`, and routing in `vercel.json`. The function reuses the local Python handler for the interface, scheduling, validation, prompt templates, and CSV export. Tests, report drafts, screenshots, and saved evaluation output are excluded from the function bundle; the evaluation inputs stay available because the app uses them.
 
 Import `saif2020azk-ux/studyflow` in the intended Vercel account/team. Use the repository root, Framework Preset **Other**, and the default build/install settings. No API keys or environment variables are required. Connecting the Vercel GitHub integration to this repository enables deployments from GitHub commits. Verify the resulting deployment at `/` and `/api/health` before sharing its URL.
+
+The current Vercel project is `studyflow` in **NEBULA LABS** (`nebula-labs1`), connected to this repository’s `main` branch. Pushes to `main` trigger production deployments. The explicit homepage rewrite serves the app at `/`; other routes use the same Python function.
 
 References: [Vercel Python functions](https://vercel.com/docs/functions/runtimes/python/api-directory), [Vercel GitHub integration](https://vercel.com/docs/git/vercel-for-github).
 

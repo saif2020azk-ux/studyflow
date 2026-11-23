@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-11-24
+- Connected the Vercel project in NEBULA LABS to saif2020azk-ux/studyflow, with production deployments from main.
+- Added the production website URL and corrected Vercel’s function and homepage routing.
 - Prepared Vercel Python hosting with a serverless entry point, explicit routing, Python version selection, and API tests through rewritten URLs.
 - Removed the unused Sites manifest, Node browser-check script, empty requirements file, and redundant mobile screenshot variants.
 - Cleaned local legacy build output, Python caches, and the temporary source ZIP.
