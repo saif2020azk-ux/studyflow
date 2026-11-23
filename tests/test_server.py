@@ -104,7 +104,7 @@ class VercelApiTests(ApiTests):
 
     def request(self, method, path, *args, **kwargs):
         from urllib.parse import quote
-        target = "/api?__path=" + quote(path, safe="")
+        target = "/api/index?__path=" + quote(path, safe="")
         return super().request(method, target, *args, **kwargs)
 
 
